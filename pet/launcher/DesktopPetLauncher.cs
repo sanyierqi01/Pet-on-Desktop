@@ -6,19 +6,28 @@ using System.Windows.Forms;
 
 internal static class DesktopPetLauncher
 {
-    private const string MutexName = @"Local\CodexDesktopPetLauncher";
+    private const string PetMutexName = @"Local\CodexDesktopPetLauncher";
+    private const string FaceManagerMutexName = @"Local\CodexDesktopPetFaceManager";
 
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
+        var isFaceManager = args.Length > 0 &&
+            string.Equals(args[0], "--face-manager", StringComparison.OrdinalIgnoreCase);
+        var mutexName = isFaceManager ? FaceManagerMutexName : PetMutexName;
+        var scriptName = isFaceManager ? "face-manager.ps1" : "desktop-pet.ps1";
+        var windowTitle = isFaceManager ? "人脸管理" : "桌宠";
+
         bool createdNew;
-        using (var mutex = new Mutex(true, MutexName, out createdNew))
+        using (var mutex = new Mutex(true, mutexName, out createdNew))
         {
             if (!createdNew)
             {
                 MessageBox.Show(
-                    "桌面宠物已经在运行，请直接拖动桌面上的角色。",
-                    "桌宠",
+                    isFaceManager
+                        ? "人脸管理窗口已经打开。"
+                        : "桌面宠物已经在运行，请直接拖动桌面上的角色。",
+                    windowTitle,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
@@ -26,12 +35,12 @@ internal static class DesktopPetLauncher
             }
 
             var root = AppDomain.CurrentDomain.BaseDirectory;
-            var scriptPath = Path.Combine(root, "desktop-pet.ps1");
+            var scriptPath = Path.Combine(root, scriptName);
             if (!File.Exists(scriptPath))
             {
                 MessageBox.Show(
-                    "没有找到 desktop-pet.ps1，请保持快捷方式指向项目目录。",
-                    "桌宠启动失败",
+                    "没有找到 " + scriptName + "，请保持快捷方式指向项目目录。",
+                    windowTitle + "启动失败",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
@@ -42,8 +51,8 @@ internal static class DesktopPetLauncher
             if (powerShellPath == null)
             {
                 MessageBox.Show(
-                    "没有找到 PowerShell，无法启动桌宠。",
-                    "桌宠启动失败",
+                    "没有找到 PowerShell，无法启动" + windowTitle + "。",
+                    windowTitle + "启动失败",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
@@ -52,7 +61,7 @@ internal static class DesktopPetLauncher
 
             var arguments =
                 "-NoLogo -NoProfile -ExecutionPolicy Bypass -STA " +
-                "-WindowStyle Hidden -File \"" + scriptPath + "\"";
+                "-File \"" + scriptPath + "\"";
 
             var startInfo = new ProcessStartInfo
             {
@@ -82,8 +91,8 @@ internal static class DesktopPetLauncher
                     {
                         var details = string.IsNullOrWhiteSpace(error) ? output : error;
                         MessageBox.Show(
-                            "桌宠运行失败：\r\n\r\n" + details,
-                            "桌宠启动失败",
+                            windowTitle + "运行失败：\r\n\r\n" + details,
+                            windowTitle + "启动失败",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Error
                         );
@@ -95,8 +104,8 @@ internal static class DesktopPetLauncher
             catch (Exception exception)
             {
                 MessageBox.Show(
-                    "桌宠运行失败：\r\n\r\n" + exception.Message,
-                    "桌宠启动失败",
+                    windowTitle + "运行失败：\r\n\r\n" + exception.Message,
+                    windowTitle + "启动失败",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
@@ -111,6 +120,21 @@ internal static class DesktopPetLauncher
         if (!string.IsNullOrEmpty(fromPath))
         {
             return fromPath;
+        }
+
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var codexRuntimeRoot = Path.Combine(
+            userProfile,
+            @".cache\codex-runtimes"
+        );
+        var codexPowerShell = FindFile(
+            codexRuntimeRoot,
+            "pwsh.exe",
+            7
+        );
+        if (!string.IsNullOrEmpty(codexPowerShell))
+        {
+            return codexPowerShell;
         }
 
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -152,6 +176,37 @@ internal static class DesktopPetLauncher
             {
                 // Ignore invalid PATH entries and continue searching.
             }
+        }
+
+        return null;
+    }
+
+    private static string FindFile(string root, string fileName, int depth)
+    {
+        if (depth < 0 || !Directory.Exists(root))
+        {
+            return null;
+        }
+
+        try
+        {
+            foreach (var candidate in Directory.GetFiles(root, fileName))
+            {
+                return candidate;
+            }
+
+            foreach (var directory in Directory.GetDirectories(root))
+            {
+                var found = FindFile(directory, fileName, depth - 1);
+                if (!string.IsNullOrEmpty(found))
+                {
+                    return found;
+                }
+            }
+        }
+        catch
+        {
+            // Skip folders that are not accessible and continue searching.
         }
 
         return null;

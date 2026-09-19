@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "currentId": "face-7e8c1dc64d024d0985b63e2d09ed2093",
+  "faces": [
+    {
+      "id": "default",
+      "name": "默认人脸",
+      "file": "default.png",
+      "isDefault": true,
+      "createdAt": "2026-09-19T14:51:58.5738843Z"
+    },
+    {
+      "id": "face-7e8c1dc64d024d0985b63e2d09ed2093",
+      "name": "人脸 1",
+      "file": "face-7e8c1dc64d024d0985b63e2d09ed2093.png",
+      "isDefault": false,
+      "createdAt": "2026-09-19T15:05:03.8031365Z"
+    },
+    {
+      "id": "face-91e20a3f8dbe4bc4a0b6e6abbd63c6b6",
+      "name": "人脸 2",
+      "file": "face-91e20a3f8dbe4bc4a0b6e6abbd63c6b6.png",
+      "isDefault": false,
+      "createdAt": "2026-09-19T15:12:00.1385374Z"
+    }
+  ]
+}

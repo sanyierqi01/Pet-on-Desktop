@@ -7,11 +7,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$executable = Join-Path $root '桌面宠物.exe'
+$application = [pscustomobject]@{
+    Name = '桌宠'
+    Executable = Join-Path $root '桌面宠物.exe'
+    Description = '桌宠与人脸管理'
+}
 $icon = Join-Path $root 'assets\pet.ico'
 
-if (-not (Test-Path -LiteralPath $executable)) {
-    throw '桌面宠物.exe does not exist. Run scripts\build-launcher.ps1 first.'
+if (-not (Test-Path -LiteralPath $application.Executable)) {
+    throw "$($application.Executable) does not exist. Run scripts\build-launcher.ps1 first."
 }
 
 $shell = New-Object -ComObject WScript.Shell
@@ -26,12 +30,17 @@ if ($Startup) {
 
 foreach ($directory in $locations) {
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
+    $legacyShortcut = Join-Path $directory '人脸管理.lnk'
+    if (Test-Path -LiteralPath $legacyShortcut) {
+        Remove-Item -LiteralPath $legacyShortcut -Force
+    }
+
     $shortcutPath = Join-Path $directory '桌宠.lnk'
     $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $executable
+    $shortcut.TargetPath = $application.Executable
     $shortcut.WorkingDirectory = $root
     $shortcut.IconLocation = "$icon,0"
-    $shortcut.Description = '自动爬行的桌面宠物'
+    $shortcut.Description = $application.Description
     $shortcut.WindowStyle = 1
     $shortcut.Save()
     Write-Output $shortcutPath

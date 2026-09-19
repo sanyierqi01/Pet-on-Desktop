@@ -14,8 +14,10 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Speech
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$headPath = Join-Path $root 'assets\head-cutout.png'
 $sourcePath = Join-Path $root 'assets\portrait-source.jpg'
+. (Join-Path $root 'scripts\face-library.ps1')
+
+$headPath = Get-CurrentFacePath -Root $root
 
 if (-not (Test-Path -LiteralPath $headPath)) {
     & (Join-Path $root 'scripts\build-assets.ps1') -Source $sourcePath -OutFile $headPath | Out-Null
@@ -108,12 +110,19 @@ $blushBrush = [System.Windows.Media.SolidColorBrush]::new(
 )
 $blushBrush.Freeze()
 
-$headImage = [System.Windows.Media.Imaging.BitmapImage]::new()
-$headImage.BeginInit()
-$headImage.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-$headImage.UriSource = [System.Uri]::new($headPath)
-$headImage.EndInit()
-$headImage.Freeze()
+function Import-FaceBitmap {
+    param([string]$Path)
+
+    $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+    $image.BeginInit()
+    $image.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+    $image.UriSource = [System.Uri]::new($Path)
+    $image.EndInit()
+    $image.Freeze()
+    return $image
+}
+
+$script:headImage = Import-FaceBitmap -Path $headPath
 
 function Add-PetDrawing {
     param(
@@ -122,7 +131,9 @@ function Add-PetDrawing {
         [double]$Reaction,
         [double]$Facing = 1.0,
         [double]$Moving = 0.0,
-        [double]$Tired = 0.0
+        [double]$Tired = 0.0,
+        [bool]$DrawBody = $true,
+        [bool]$DrawFace = $true
     )
 
     $breath = [Math]::Sin($Phase) * 1.35
@@ -147,6 +158,7 @@ function Add-PetDrawing {
         $Context.PushTransform([System.Windows.Media.ScaleTransform]::new(-1, 1, 150, 120))
     }
 
+    if ($DrawBody) {
     $Context.DrawEllipse($shadowBrush, $null, [System.Windows.Point]::new(169, 205), 111, 13)
     $Context.DrawEllipse($groundBrush, $null, [System.Windows.Point]::new(65, 191), 24, 6)
     $Context.DrawEllipse($groundBrush, $null, [System.Windows.Point]::new(132, 191), 24, 6)
@@ -253,55 +265,6 @@ function Add-PetDrawing {
         [System.Windows.Point]::new(193, 155)
     )
 
-    # The source photo remains visible as the face. It is scaled down and
-    # overlapped with the illustrated neck and collar.
-    $Context.DrawEllipse($brushes.Skin, $null, [System.Windows.Point]::new(101, 118), 19, 21)
-    $headRect = [System.Windows.Rect]::new(39 - ($crawlA * 2.5), 17 + $headBob, 106, 134)
-    $Context.DrawImage($headImage, $headRect)
-
-    if ($Tired -gt 0.01) {
-        $faceOffsetX = -($crawlA * 2.5)
-        $leftEye = [System.Windows.Point]::new(73 + $faceOffsetX, 78 + $headBob)
-        $rightEye = [System.Windows.Point]::new(114 + $faceOffsetX, 78 + $headBob)
-        $leftLid = New-FrozenCurveGeometry `
-            -Start ([System.Windows.Point]::new($leftEye.X - 10, $leftEye.Y)) `
-            -Control ([System.Windows.Point]::new($leftEye.X, $leftEye.Y - 6)) `
-            -End ([System.Windows.Point]::new($leftEye.X + 10, $leftEye.Y + 1))
-        $rightLid = New-FrozenCurveGeometry `
-            -Start ([System.Windows.Point]::new($rightEye.X - 10, $rightEye.Y)) `
-            -Control ([System.Windows.Point]::new($rightEye.X, $rightEye.Y - 6)) `
-            -End ([System.Windows.Point]::new($rightEye.X + 10, $rightEye.Y + 1))
-        $leftBrow = New-FrozenCurveGeometry `
-            -Start ([System.Windows.Point]::new($leftEye.X - 10, $leftEye.Y - 10)) `
-            -Control ([System.Windows.Point]::new($leftEye.X, $leftEye.Y - 12)) `
-            -End ([System.Windows.Point]::new($leftEye.X + 10, $leftEye.Y - 7))
-        $rightBrow = New-FrozenCurveGeometry `
-            -Start ([System.Windows.Point]::new($rightEye.X - 10, $rightEye.Y - 7)) `
-            -Control ([System.Windows.Point]::new($rightEye.X, $rightEye.Y - 12)) `
-            -End ([System.Windows.Point]::new($rightEye.X + 10, $rightEye.Y - 10))
-        $tiredMouth = New-FrozenCurveGeometry `
-            -Start ([System.Windows.Point]::new(92 + $faceOffsetX, 111 + $headBob)) `
-            -Control ([System.Windows.Point]::new(103 + $faceOffsetX, 106 + $headBob)) `
-            -End ([System.Windows.Point]::new(114 + $faceOffsetX, 111 + $headBob))
-
-        $Context.PushOpacity($Tired * 0.9)
-        $Context.DrawEllipse($brushes.Skin, $null, $leftEye, 10, 6)
-        $Context.DrawEllipse($brushes.Skin, $null, $rightEye, 10, 6)
-        $Context.DrawGeometry($null, (New-FrozenPen $colors.InkSoft 2.6), $leftLid)
-        $Context.DrawGeometry($null, (New-FrozenPen $colors.InkSoft 2.6), $rightLid)
-        $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.1), $leftBrow)
-        $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.1), $rightBrow)
-        $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.2), $tiredMouth)
-        $Context.DrawEllipse(
-            $brushes.Sweat,
-            (New-FrozenPen '#4E9BBD' 1.1),
-            [System.Windows.Point]::new(132 + $faceOffsetX, 72 + $headBob),
-            4,
-            7
-        )
-        $Context.Pop()
-    }
-
     # Near arm stays in front of the torso and reaches forward on the
     # opposite beat from the far arm.
     $nearShoulder = [System.Windows.Point]::new(122, 106)
@@ -352,10 +315,61 @@ function Add-PetDrawing {
         [System.Windows.Point]::new($farFoot.X + 10, $farFoot.Y + 1)
     )
 
-    # A tiny blush pulse gives the click response a friendly read.
-    if ($Reaction -gt 0.05) {
-        $Context.DrawEllipse($blushBrush, $null, [System.Windows.Point]::new(78, 91 + $headBob), 7, 3.3)
-        $Context.DrawEllipse($blushBrush, $null, [System.Windows.Point]::new(120, 91 + $headBob), 7, 3.3)
+    }
+
+    if ($DrawFace) {
+        # Neck and face are kept in a separate visual layer from the body.
+        $Context.DrawEllipse($brushes.Skin, $null, [System.Windows.Point]::new(101, 118), 19, 21)
+        $headRect = [System.Windows.Rect]::new(39 - ($crawlA * 2.5), 17 + $headBob, 106, 134)
+        $Context.DrawImage($script:headImage, $headRect)
+
+        if ($Tired -gt 0.01) {
+            $faceOffsetX = -($crawlA * 2.5)
+            $leftEye = [System.Windows.Point]::new(73 + $faceOffsetX, 78 + $headBob)
+            $rightEye = [System.Windows.Point]::new(114 + $faceOffsetX, 78 + $headBob)
+            $leftLid = New-FrozenCurveGeometry `
+                -Start ([System.Windows.Point]::new($leftEye.X - 10, $leftEye.Y)) `
+                -Control ([System.Windows.Point]::new($leftEye.X, $leftEye.Y - 6)) `
+                -End ([System.Windows.Point]::new($leftEye.X + 10, $leftEye.Y + 1))
+            $rightLid = New-FrozenCurveGeometry `
+                -Start ([System.Windows.Point]::new($rightEye.X - 10, $rightEye.Y)) `
+                -Control ([System.Windows.Point]::new($rightEye.X, $rightEye.Y - 6)) `
+                -End ([System.Windows.Point]::new($rightEye.X + 10, $rightEye.Y + 1))
+            $leftBrow = New-FrozenCurveGeometry `
+                -Start ([System.Windows.Point]::new($leftEye.X - 10, $leftEye.Y - 10)) `
+                -Control ([System.Windows.Point]::new($leftEye.X, $leftEye.Y - 12)) `
+                -End ([System.Windows.Point]::new($leftEye.X + 10, $leftEye.Y - 7))
+            $rightBrow = New-FrozenCurveGeometry `
+                -Start ([System.Windows.Point]::new($rightEye.X - 10, $rightEye.Y - 7)) `
+                -Control ([System.Windows.Point]::new($rightEye.X, $rightEye.Y - 12)) `
+                -End ([System.Windows.Point]::new($rightEye.X + 10, $rightEye.Y - 10))
+            $tiredMouth = New-FrozenCurveGeometry `
+                -Start ([System.Windows.Point]::new(92 + $faceOffsetX, 111 + $headBob)) `
+                -Control ([System.Windows.Point]::new(103 + $faceOffsetX, 106 + $headBob)) `
+                -End ([System.Windows.Point]::new(114 + $faceOffsetX, 111 + $headBob))
+
+            $Context.PushOpacity($Tired * 0.9)
+            $Context.DrawEllipse($brushes.Skin, $null, $leftEye, 10, 6)
+            $Context.DrawEllipse($brushes.Skin, $null, $rightEye, 10, 6)
+            $Context.DrawGeometry($null, (New-FrozenPen $colors.InkSoft 2.6), $leftLid)
+            $Context.DrawGeometry($null, (New-FrozenPen $colors.InkSoft 2.6), $rightLid)
+            $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.1), $leftBrow)
+            $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.1), $rightBrow)
+            $Context.DrawGeometry($null, (New-FrozenPen $colors.Ink 2.2), $tiredMouth)
+            $Context.DrawEllipse(
+                $brushes.Sweat,
+                (New-FrozenPen '#4E9BBD' 1.1),
+                [System.Windows.Point]::new(132 + $faceOffsetX, 72 + $headBob),
+                4,
+                7
+            )
+            $Context.Pop()
+        }
+
+        if ($Reaction -gt 0.05) {
+            $Context.DrawEllipse($blushBrush, $null, [System.Windows.Point]::new(78, 91 + $headBob), 7, 3.3)
+            $Context.DrawEllipse($blushBrush, $null, [System.Windows.Point]::new(120, 91 + $headBob), 7, 3.3)
+        }
     }
 
     if ($Facing -lt 0) {
@@ -363,6 +377,34 @@ function Add-PetDrawing {
     }
     $Context.Pop()
     $Context.Pop()
+}
+
+function Save-TransparentDrawing {
+    param(
+        [System.Windows.Media.DrawingVisual]$Visual,
+        [string]$Path
+    )
+
+    $bitmap = [System.Windows.Media.Imaging.RenderTargetBitmap]::new(
+        300,
+        240,
+        96,
+        96,
+        [System.Windows.Media.PixelFormats]::Pbgra32
+    )
+    $bitmap.Render($Visual)
+
+    $directory = Split-Path -Parent $Path
+    New-Item -ItemType Directory -Force -Path $directory | Out-Null
+    $stream = [System.IO.File]::Create($Path)
+    try {
+        $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
+        $encoder.Save($stream)
+    }
+    finally {
+        $stream.Dispose()
+    }
 }
 
 function Export-PetPreview {
@@ -393,6 +435,32 @@ function Export-PetPreview {
     finally {
         $stream.Dispose()
     }
+
+    $layersDirectory = Join-Path $directory 'layers'
+    $bodyLayerPath = Join-Path $layersDirectory 'body.png'
+    $faceLayerPath = Join-Path $layersDirectory 'face.png'
+
+    $bodyLayer = [System.Windows.Media.DrawingVisual]::new()
+    $bodyLayerContext = $bodyLayer.RenderOpen()
+    Add-PetDrawing `
+        -Context $bodyLayerContext `
+        -Phase 0.65 `
+        -Reaction 0 `
+        -DrawBody $true `
+        -DrawFace $false
+    $bodyLayerContext.Close()
+    Save-TransparentDrawing -Visual $bodyLayer -Path $bodyLayerPath
+
+    $faceLayer = [System.Windows.Media.DrawingVisual]::new()
+    $faceLayerContext = $faceLayer.RenderOpen()
+    Add-PetDrawing `
+        -Context $faceLayerContext `
+        -Phase 0.65 `
+        -Reaction 0 `
+        -DrawBody $false `
+        -DrawFace $true
+    $faceLayerContext.Close()
+    Save-TransparentDrawing -Visual $faceLayer -Path $faceLayerPath
 
     $tiredPath = Join-Path $directory 'pet-tired-preview.png'
     $tiredVisual = [System.Windows.Media.DrawingVisual]::new()
@@ -459,6 +527,8 @@ function Export-PetPreview {
     }
 
     Write-Output $Path
+    Write-Output $bodyLayerPath
+    Write-Output $faceLayerPath
     Write-Output $tiredPath
     Write-Output $motionPath
 }
@@ -468,7 +538,8 @@ if ($ExportPreview) {
     return
 }
 
-$visual = [System.Windows.Media.DrawingVisual]::new()
+$bodyVisual = [System.Windows.Media.DrawingVisual]::new()
+$faceVisual = [System.Windows.Media.DrawingVisual]::new()
 $window = [System.Windows.Window]::new()
 $window.Title = 'Mian Bao Desktop Pet'
 $window.Width = 300
@@ -480,13 +551,28 @@ $window.Background = [System.Windows.Media.Brushes]::Transparent
 $window.ShowInTaskbar = $false
 $window.Topmost = $true
 
-$hostVisual = [System.Windows.Media.VisualBrush]::new($visual)
-$hostVisual.Stretch = [System.Windows.Media.Stretch]::None
-$hostVisual.AlignmentX = [System.Windows.Media.AlignmentX]::Left
-$hostVisual.AlignmentY = [System.Windows.Media.AlignmentY]::Top
+$bodyBrush = [System.Windows.Media.VisualBrush]::new($bodyVisual)
+$bodyBrush.Viewbox = [System.Windows.Rect]::new(0, 0, 300, 240)
+$bodyBrush.ViewboxUnits = [System.Windows.Media.BrushMappingMode]::Absolute
+$bodyBrush.Stretch = [System.Windows.Media.Stretch]::Fill
+$bodyBrush.AlignmentX = [System.Windows.Media.AlignmentX]::Left
+$bodyBrush.AlignmentY = [System.Windows.Media.AlignmentY]::Top
 
-$surface = [System.Windows.Controls.Border]::new()
-$surface.Background = $hostVisual
+$faceBrush = [System.Windows.Media.VisualBrush]::new($faceVisual)
+$faceBrush.Viewbox = [System.Windows.Rect]::new(0, 0, 300, 240)
+$faceBrush.ViewboxUnits = [System.Windows.Media.BrushMappingMode]::Absolute
+$faceBrush.Stretch = [System.Windows.Media.Stretch]::Fill
+$faceBrush.AlignmentX = [System.Windows.Media.AlignmentX]::Left
+$faceBrush.AlignmentY = [System.Windows.Media.AlignmentY]::Top
+
+$bodySurface = [System.Windows.Controls.Border]::new()
+$bodySurface.Background = $bodyBrush
+$faceSurface = [System.Windows.Controls.Border]::new()
+$faceSurface.Background = $faceBrush
+
+$surface = [System.Windows.Controls.Grid]::new()
+$surface.Children.Add($bodySurface) | Out-Null
+$surface.Children.Add($faceSurface) | Out-Null
 $surface.ToolTip = '拖动我；点一下会跳；右键打开菜单'
 $window.Content = $surface
 
@@ -508,6 +594,14 @@ $script:turnTimes = [System.Collections.Generic.Queue[DateTime]]::new()
 $script:tiredUntil = [DateTime]::MinValue
 $script:lastTiredSpeech = [DateTime]::MinValue
 $script:tiredExpression = 0.0
+$libraryPaths = Get-FaceLibraryPaths -Root $root
+$script:lastFaceMetadataWrite = if (Test-Path -LiteralPath $libraryPaths.Metadata) {
+    (Get-Item -LiteralPath $libraryPaths.Metadata).LastWriteTimeUtc
+}
+else {
+    [DateTime]::MinValue
+}
+$script:nextFaceCheck = [DateTime]::MinValue
 
 $script:speech = $null
 try {
@@ -618,26 +712,68 @@ function Update-PetMotion {
     $script:moving = 1.0
 }
 
+function Update-CurrentFace {
+    $now = [DateTime]::UtcNow
+    if ($now -lt $script:nextFaceCheck) {
+        return
+    }
+    $script:nextFaceCheck = $now.AddSeconds(1)
+
+    if (-not (Test-Path -LiteralPath $libraryPaths.Metadata)) {
+        return
+    }
+
+    $metadataWrite = (Get-Item -LiteralPath $libraryPaths.Metadata).LastWriteTimeUtc
+    if ($metadataWrite -eq $script:lastFaceMetadataWrite) {
+        return
+    }
+
+    try {
+        $newFacePath = Get-CurrentFacePath -Root $root
+        $newFaceImage = Import-FaceBitmap -Path $newFacePath
+        $script:headImage = $newFaceImage
+        $script:lastFaceMetadataWrite = $metadataWrite
+    }
+    catch {
+        # Keep the current face if a photo is being replaced on disk.
+    }
+}
+
 function Render-Pet {
     $now = [DateTime]::UtcNow
     $elapsed = [Math]::Min(0.08, [Math]::Max(0.001, ($now - $script:lastRender).TotalSeconds))
     $script:lastRender = $now
     Update-PetMotion -Elapsed $elapsed
+    Update-CurrentFace
     $script:phase += $elapsed * (2.15 + ($script:moving * 6.0))
     $script:reaction *= [Math]::Pow(0.08, $elapsed)
     $tiredTarget = if ($now -lt $script:tiredUntil) { 1.0 } else { 0.0 }
     $tiredBlend = [Math]::Min(1.0, $elapsed * 4.5)
     $script:tiredExpression += ($tiredTarget - $script:tiredExpression) * $tiredBlend
 
-    $context = $visual.RenderOpen()
+    $bodyContext = $bodyVisual.RenderOpen()
     Add-PetDrawing `
-        -Context $context `
+        -Context $bodyContext `
         -Phase $script:phase `
         -Reaction $script:reaction `
         -Facing $script:facing `
         -Moving $script:moving `
-        -Tired $script:tiredExpression
-    $context.Close()
+        -Tired $script:tiredExpression `
+        -DrawBody $true `
+        -DrawFace $false
+    $bodyContext.Close()
+
+    $faceContext = $faceVisual.RenderOpen()
+    Add-PetDrawing `
+        -Context $faceContext `
+        -Phase $script:phase `
+        -Reaction $script:reaction `
+        -Facing $script:facing `
+        -Moving $script:moving `
+        -Tired $script:tiredExpression `
+        -DrawBody $false `
+        -DrawFace $true
+    $faceContext.Close()
 }
 
 function Invoke-PetHop {
@@ -693,6 +829,32 @@ $startupCommand = if (Test-Path -LiteralPath $launcherPath) {
 else {
     'wscript.exe "' + (Join-Path $root 'start-pet.vbs') + '"'
 }
+
+$faceManagerItem = [System.Windows.Controls.MenuItem]::new()
+$faceManagerItem.Header = '人脸管理'
+$faceManagerItem.Add_Click({
+    if (Test-Path -LiteralPath $launcherPath) {
+        Start-Process `
+            -FilePath $launcherPath `
+            -ArgumentList '--face-manager' `
+            -WorkingDirectory $root | Out-Null
+        return
+    }
+
+    Start-Process `
+        -FilePath 'pwsh.exe' `
+        -ArgumentList @(
+            '-NoLogo',
+            '-NoProfile',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-STA',
+            '-File',
+            (Join-Path $root 'face-manager.ps1')
+        ) `
+        -WorkingDirectory $root | Out-Null
+})
+
 $startupEnabled = $false
 try {
     $startupProperty = Get-ItemProperty -Path $startupKey -Name $startupValueName -ErrorAction Stop
@@ -746,6 +908,7 @@ $menu = [System.Windows.Controls.ContextMenu]::new()
 $menu.Items.Add($hopItem) | Out-Null
 $menu.Items.Add($nudgeItem) | Out-Null
 $menu.Items.Add([System.Windows.Controls.Separator]::new()) | Out-Null
+$menu.Items.Add($faceManagerItem) | Out-Null
 $menu.Items.Add($crawlItem) | Out-Null
 $menu.Items.Add($startupItem) | Out-Null
 $menu.Items.Add($topmostItem) | Out-Null

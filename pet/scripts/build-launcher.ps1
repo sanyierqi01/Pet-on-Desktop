@@ -88,7 +88,7 @@ if ($Force -or -not (Test-Path -LiteralPath $outputPath)) {
         "/out:$outputPath" `
         $sourcePath
     if ($LASTEXITCODE -ne 0) {
-        throw "Launcher compilation failed with exit code $LASTEXITCODE."
+        throw "Launcher compilation failed for $outputPath with exit code $LASTEXITCODE."
     }
 }
 
