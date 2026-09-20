@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "currentId": "default",
+  "faces": [
+    {
+      "id": "default",
+      "name": "默认人脸",
+      "file": "default.png",
+      "isDefault": true,
+      "createdAt": "2026-09-19T14:51:58.5738843Z"
+    }
+  ]
+}
