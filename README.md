@@ -8,6 +8,8 @@
 
 第一次使用时也可以运行 `创建快捷方式.cmd`，把统一的“桌宠”入口放到桌面和开始菜单。
 
+分享给其他电脑时，直接发送 `release\桌宠-便携版.zip`。对方解压后双击 `桌面宠物.exe` 即可，不需要安装 PowerShell 7、Python、OpenCV 或其他开发工具。
+
 `桌面宠物.exe` 会防止重复启动，并让 PowerShell 后台运行；如果桌宠脚本出错，会弹出错误提示。需要查看控制台输出时，可改用 `start-pet.cmd`。
 
 也可以在当前目录运行：
@@ -19,6 +21,7 @@ pwsh.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\desktop-pet.ps1
 ## 操作
 
 - 左键拖动：移动角色。
+- 屏幕边界：拖动或自动爬行时，角色始终限制在当前显示器的工作区内。
 - 单击角色：让它跳一下，并说“宝宝，我爱你”。
 - 自动爬行：角色持续朝鼠标方向移动，并根据鼠标位置左右转身。
 - 四足步态：前爪和后腿按对角节奏交替前伸、撑地、抬起并回收，头肩同步做前后重心转移。
@@ -40,6 +43,7 @@ pwsh.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\desktop-pet.ps1
 - `scripts/face-library.ps1`：人脸入库、切换、删除和当前人脸读取。
 - `scripts/build-launcher.ps1`：重新生成带图标的统一启动程序。
 - `scripts/install-shortcuts.ps1`：创建桌面和开始菜单快捷方式。
+- `scripts/build-release.ps1`：生成可直接分享的便携压缩包。
 - `ui/face-manager.xaml`：人脸管理界面。
 
 如需恢复默认人脸，在人脸管理中选中“默认人脸”并点击“设为当前”。
