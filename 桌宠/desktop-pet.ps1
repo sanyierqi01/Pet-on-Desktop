@@ -702,14 +702,67 @@ function Update-PetMotion {
     $stepX = ($deltaX / $distance) * $travel
     $stepY = ($deltaY / $distance) * $travel
 
-    $minLeft = $workArea.Left + 4
-    $maxLeft = $workArea.Right - $window.Width - 4
-    $minTop = $workArea.Top + 4
-    $maxTop = $workArea.Bottom - $window.Height - 4
-
-    $window.Left = [Math]::Max($minLeft, [Math]::Min($maxLeft, $window.Left + $stepX))
-    $window.Top = [Math]::Max($minTop, [Math]::Min($maxTop, $window.Top + $stepY))
+    $boundedPosition = Get-ClampedPetPosition `
+        -Left ($window.Left + $stepX) `
+        -Top ($window.Top + $stepY) `
+        -ScreenPoint ([System.Windows.Point]::new($cursor.X, $cursor.Y))
+    $window.Left = $boundedPosition.X
+    $window.Top = $boundedPosition.Y
     $script:moving = 1.0
+}
+
+function Get-DesktopWorkArea {
+    param([System.Windows.Point]$ScreenPoint)
+
+    $screen = [System.Windows.Forms.Screen]::FromPoint(
+        [System.Drawing.Point]::new(
+            [int][Math]::Round($ScreenPoint.X),
+            [int][Math]::Round($ScreenPoint.Y)
+        )
+    )
+    $source = [System.Windows.PresentationSource]::FromVisual($window)
+    if ($null -eq $source -or $null -eq $source.CompositionTarget) {
+        return $screen.WorkingArea
+    }
+
+    $fromDevice = $source.CompositionTarget.TransformFromDevice
+    $topLeft = $fromDevice.Transform(
+        [System.Windows.Point]::new(
+            $screen.WorkingArea.Left,
+            $screen.WorkingArea.Top
+        )
+    )
+    $bottomRight = $fromDevice.Transform(
+        [System.Windows.Point]::new(
+            $screen.WorkingArea.Right,
+            $screen.WorkingArea.Bottom
+        )
+    )
+    return [System.Windows.Rect]::new(
+        $topLeft.X,
+        $topLeft.Y,
+        $bottomRight.X - $topLeft.X,
+        $bottomRight.Y - $topLeft.Y
+    )
+}
+
+function Get-ClampedPetPosition {
+    param(
+        [double]$Left,
+        [double]$Top,
+        [System.Windows.Point]$ScreenPoint
+    )
+
+    $bounds = Get-DesktopWorkArea -ScreenPoint $ScreenPoint
+    $minLeft = $bounds.Left
+    $minTop = $bounds.Top
+    $maxLeft = [Math]::Max($minLeft, $bounds.Right - $window.Width)
+    $maxTop = [Math]::Max($minTop, $bounds.Bottom - $window.Height)
+
+    return [System.Windows.Point]::new(
+        [Math]::Max($minLeft, [Math]::Min($maxLeft, $Left)),
+        [Math]::Max($minTop, [Math]::Min($maxTop, $Top))
+    )
 }
 
 function Update-CurrentFace {
@@ -941,8 +994,12 @@ $window.Add_MouseMove({
         $script:dragMoved = $true
     }
 
-    $sender.Left = $script:dragStartWindow.X + $deltaX
-    $sender.Top = $script:dragStartWindow.Y + $deltaY
+    $boundedPosition = Get-ClampedPetPosition `
+        -Left ($script:dragStartWindow.X + $deltaX) `
+        -Top ($script:dragStartWindow.Y + $deltaY) `
+        -ScreenPoint $screenPoint
+    $sender.Left = $boundedPosition.X
+    $sender.Top = $boundedPosition.Y
 })
 
 $window.Add_MouseLeftButtonUp({

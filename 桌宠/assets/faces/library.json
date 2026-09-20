@@ -8,6 +8,34 @@
       "file": "default.png",
       "isDefault": true,
       "createdAt": "2026-09-19T14:51:58.5738843Z"
+    },
+    {
+      "id": "face-b791c32683364c5996e2680fd899dce5",
+      "name": "人脸 1",
+      "file": "face-b791c32683364c5996e2680fd899dce5.png",
+      "isDefault": false,
+      "createdAt": "2026-09-20T05:44:29.1634162Z"
+    },
+    {
+      "id": "face-2c6877c7000f40b989eed2ddfab9593c",
+      "name": "人脸 2",
+      "file": "face-2c6877c7000f40b989eed2ddfab9593c.png",
+      "isDefault": false,
+      "createdAt": "2026-09-20T05:44:37.0563975Z"
+    },
+    {
+      "id": "face-449529eb7c61486b9a4f1b24e02501b0",
+      "name": "人脸 3",
+      "file": "face-449529eb7c61486b9a4f1b24e02501b0.png",
+      "isDefault": false,
+      "createdAt": "2026-09-20T05:44:49.7472546Z"
+    },
+    {
+      "id": "face-44642e139b624a4aa674dbe5e7c2b957",
+      "name": "人脸 4",
+      "file": "face-44642e139b624a4aa674dbe5e7c2b957.png",
+      "isDefault": false,
+      "createdAt": "2026-09-20T05:44:54.8960594Z"
     }
   ]
 }
