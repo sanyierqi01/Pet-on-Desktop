@@ -1,0 +1,142 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="人脸管理"
+    Width="880"
+    Height="570"
+    MinWidth="760"
+    MinHeight="500"
+    WindowStartupLocation="CenterScreen"
+    Background="#F2F4F6"
+    FontFamily="Microsoft YaHei UI">
+    <Window.Resources>
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#0F766E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#E2E8EC"/>
+            <Setter Property="Foreground" Value="#20313F"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="DangerButton" TargetType="Button">
+            <Setter Property="Background" Value="#FBE9E7"/>
+            <Setter Property="Foreground" Value="#B42318"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="58"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="34"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="人脸管理" FontSize="25" FontWeight="SemiBold" Foreground="#15232D"/>
+            <TextBlock Text="上传照片后会自动识别人脸并替换桌宠面部。" FontSize="13" Foreground="#657480" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="270"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="White" BorderBrush="#DDE3E7" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="42"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock
+                        Grid.Row="0"
+                        Text="人脸库"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        Foreground="#243540"
+                        VerticalAlignment="Center"
+                        Margin="16,0"/>
+                    <ListBox
+                        x:Name="FaceList"
+                        Grid.Row="1"
+                        BorderThickness="0"
+                        Background="White"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="12,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="56"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="48" Height="56" Background="#EDF1F3">
+                                        <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,3,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="14" Foreground="#20313F" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding StateText}" FontSize="11" Foreground="#71808B" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="60"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Background="#E9EEF1" BorderBrush="#DDE3E7" BorderThickness="1">
+                    <Grid>
+                        <Image x:Name="FacePreview" Stretch="Uniform" Margin="26"/>
+                        <Border
+                            x:Name="EmptyState"
+                            Background="#E9EEF1"
+                            Visibility="Collapsed">
+                            <TextBlock
+                                Text="请从左侧选择人脸"
+                                FontSize="15"
+                                Foreground="#71808B"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+                <Grid Grid.Row="1" Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="UploadButton" Grid.Column="0" Content="上传照片" Style="{StaticResource PrimaryButton}"/>
+                    <Button x:Name="ApplyButton" Grid.Column="2" Content="设为当前" Style="{StaticResource SecondaryButton}"/>
+                    <Button x:Name="DeleteButton" Grid.Column="4" Content="删除" Style="{StaticResource DangerButton}"/>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <TextBlock
+            x:Name="StatusText"
+            Grid.Row="3"
+            Text="就绪"
+            FontSize="12"
+            Foreground="#657480"
+            VerticalAlignment="Center"/>
+    </Grid>
+</Window>
