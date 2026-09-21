@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "currentId": "face-178f8030824a42bba0ad06fd6bb738e4",
+  "faces": [
+    {
+      "id": "default",
+      "name": "默认人脸",
+      "file": "default.png",
+      "isDefault": true,
+      "createdAt": "2026-09-19T14:51:58.5738843Z"
+    },
+    {
+      "id": "face-178f8030824a42bba0ad06fd6bb738e4",
+      "name": "人脸 1",
+      "file": "face-178f8030824a42bba0ad06fd6bb738e4.png",
+      "isDefault": false,
+      "createdAt": "2026-09-20T12:32:10.9502639Z"
+    }
+  ]
+}
