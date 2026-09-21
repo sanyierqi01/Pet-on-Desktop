@@ -8,7 +8,18 @@
 
 第一次使用时也可以运行 `创建快捷方式.cmd`，把统一的“桌宠”入口放到桌面和开始菜单。
 
-分享给其他电脑时，直接发送 `release\桌宠-便携版.zip`。对方解压后双击 `桌面宠物.exe` 即可，不需要安装 PowerShell 7、Python、OpenCV 或其他开发工具。
+分享给 Windows 用户时，发送 `release\Windows版\桌宠-Windows便携版.zip`。对方解压后双击 `桌面宠物.exe` 即可，不需要安装 PowerShell 7、Python、OpenCV 或其他开发工具。
+
+## Mac 正式版
+
+给 macOS 用户发送以下文件之一：
+
+- Apple 芯片：`release\Mac版\桌宠-Apple芯片版.zip`
+- Intel 芯片：`release\Mac版\桌宠-Intel芯片版.zip`
+
+两个版本都自带 Electron 运行环境，解压后直接双击 `桌宠.app`，不需要安装 Node、Python、Xcode 或 Electron。
+
+Mac 版支持透明桌宠窗口、自动追随鼠标、原生窗口边界、拖拽、系统中文语音、疲惫表情，以及本地上传、识别、切换和删除人脸。
 
 `桌面宠物.exe` 会防止重复启动，并让 PowerShell 后台运行；如果桌宠脚本出错，会弹出错误提示。需要查看控制台输出时，可改用 `start-pet.cmd`。
 
@@ -44,6 +55,9 @@ pwsh.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\desktop-pet.ps1
 - `scripts/build-launcher.ps1`：重新生成带图标的统一启动程序。
 - `scripts/install-shortcuts.ps1`：创建桌面和开始菜单快捷方式。
 - `scripts/build-release.ps1`：生成可直接分享的便携压缩包。
+- `mac/main.js`：macOS 透明窗口、全局鼠标位置和窗口边界控制。
+- `mac/build-macos.js`：生成 Apple 芯片和 Intel 芯片应用包。
+- `scripts/build-macos.ps1`：macOS 正式版构建入口。
 - `ui/face-manager.xaml`：人脸管理界面。
 
 如需恢复默认人脸，在人脸管理中选中“默认人脸”并点击“设为当前”。
